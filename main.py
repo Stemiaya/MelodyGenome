@@ -237,6 +237,9 @@ class MelodyGA:
     # --- 进化主程序 ---
 
     def evolve(self, generations=100):
+        # 函数参数选取:
+        # "seeded": 使用固定种子产生初始种群, 种子须在运行时输入
+        # "random": 使用随机种子产生初始种群
         population = self.init_population("seeded")
 
         for gen in range(generations):
@@ -306,6 +309,8 @@ def save_results_to_csv(results, ga_instance, output_filename="generated_melodie
 
 files = ['dataset_acg_ost.csv', 'dataset_classical_instrumental.csv',
          'dataset_pop_contemporary.csv']
+
+# 若此处想要使用固定种子, 须在evolve函数中修改
 ga = MelodyGA(files, seed=2024)
 results = ga.evolve(generations=150)
 
