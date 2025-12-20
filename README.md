@@ -1,5 +1,43 @@
 # MelodyGenome
 运用遗传算法进行机器编曲
+
+## 项目结构
+```
+MelodyGenome
+│  dataset.py
+│  dataset_acg_ost.csv
+│  dataset_classical_instrumental.csv
+│  dataset_pop_contemporary.csv
+│  fitnessModel.py
+│  fitness_evaluator.py
+│  generated_music.csv
+│  main.py
+│  README.md
+│  seq2midi.py
+│  test.py
+│  train.py
+│  
+├─checkpoints
+│  │  acg_model.pth
+│  │  classical_model.pth
+│  │  combined_model.pth
+│  │  pop_model.pth
+│  │  
+│  ├─acg_model_utils
+│  │      key_encoder.pkl
+│  │      
+│  ├─classical_model_utils
+│  │      key_encoder.pkl
+│  │      
+│  ├─combined_model_utils
+│  │      key_encoder.pkl
+│  │      
+│  └─pop_model_utils
+│          key_encoder.pkl
+│          
+└──output_midi
+```
+
 ## 项目文件介绍
 **README.md**: 本文件
 
