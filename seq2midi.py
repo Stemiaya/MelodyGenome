@@ -94,8 +94,3 @@ def vector_to_midi(csv_path, output_dir="output_midi"):
         filename = f"{output_dir}/{score_id}.mid"
         mid.save(filename)
         print(f"Saved: {filename}")
-
-
-# --- 执行转换 ---
-# 假设你的文件名为 generated_results.csv
-vector_to_midi("generated_music.csv")
