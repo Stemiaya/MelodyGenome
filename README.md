@@ -64,7 +64,7 @@ MelodyGenome
 ## 使用说明
 - 在该目录下打开终端，输入`python train.py`进行模型训练，训练好的模型会存放在**checkpoints**文件夹中
 - **train.py** 支持输入参数进行特定模型的训练，要进行此操作，只需输入`python train.py --target <type>`:
-  - `target`参数支持输入`acg`, `pop`, `classical`, `combine`, 分别对应数据库选择中的 **acg_ost** , **classical_instrumental** , **pop_contemporary** , 以及 **所有数据** ，无输入默认训练 **全部** .
+  - `target`参数支持输入`acg`, `pop`, `classical`, `combined`, `all`, 分别对应数据库选择中的 **acg_ost** , **classical_instrumental** , **pop_contemporary** , **随机所有数据**, 以及 **所有数据** ，无输入默认为`combined`.
 - 输入`python main.py`进行乐曲生成，生成好的乐曲会直接转化为 **X.mid** 文件存放在 **output_midi** 文件夹中
 - **main.py** 支持输入参数进行特定规则的生成，要进行此操作，只需输入`python main.py --seed <seed_num> --gen <generation_num> --pop_size <population_size> --mode<type> --model <type> --output <output_file>`:
   - `seed`参数支持输入一个整数进行固定种子选取初始数据库;
