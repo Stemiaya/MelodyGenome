@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 import random
 import ast
-
+from fitness_evaluator import FitnessEvaluator
+import argparse 
 
 class MelodyValidator:
     @staticmethod
@@ -36,13 +37,35 @@ class MelodyValidator:
 
 
 class MelodyGA:
-    def __init__(self, csv_files, pop_size=100, mutation_rate=0.08, transform_rate=0.3, seed=None):
+    def __init__(self, csv_files, pop_size=100, mutation_rate=0.08, transform_rate=0.3, 
+                 seed=42, fitness_mode='rule', ai_model_type='combined'):
+        """
+        🔧 修改：增加了 fitness_mode 和 ai_model_type 参数
+        fitness_mode: 
+            - 'rule': 仅使用硬编码乐理规则 (原版)
+            - 'ai': 仅使用神经网络评分
+            - 'hybrid': 规则分 + AI分 (推荐)
+        ai_model_type: 'classical', 'acg', 'pop', 'combined'
+        """
         self.pop_size = pop_size
         self.mutation_rate = mutation_rate
         self.transform_rate = transform_rate
         self.genome_length = 64
         self.seed = seed
         self.pool = self._load_data(csv_files)
+        
+        self.fitness_mode = fitness_mode
+        self.possible_keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Bb', 'Eb'] # 用于AI评估时的随机Key
+
+        # ✨ 新增：如果模式涉及AI，则初始化评估器
+        self.ai_evaluator = None
+        if fitness_mode in ['ai', 'hybrid']:
+            try:
+                self.ai_evaluator = FitnessEvaluator(model_type=ai_model_type)
+                print(f"✅ AI模型 ({ai_model_type}) 加载成功。")
+            except Exception as e:
+                print(f"⚠️ AI模型加载失败: {e}。自动回退到 'rule' 模式。")
+                self.fitness_mode = 'rule'
 
     def _load_data(self, csv_files):
         """合并CSV并解析数据"""
@@ -83,97 +106,109 @@ class MelodyGA:
 
         return population
 
-    # --- 适应度函数 (Fitness Function) ---
-    def calculate_fitness(self, individual):
-        """
-        基于 Özcan & Erçal 论文改进的适应度函数
-        评价维度：调性、强拍和弦音、音程平滑度、终止式、节奏约束、丰富度
-        """
+    # 🔧 修改：拆分原来的规则计算函数
+    def _calculate_rule_score(self, individual):
+        """原有的基于乐理规则的评分"""
         score = 0
-
-        # 基础参数定义
-        major_scale = [1, 3, 5, 6, 8, 10, 12]  # 大调音阶
-        chord_tones = [1, 5, 8]               # 主三和弦音 (C, E, G)
+        major_scale = [1, 3, 5, 6, 8, 10, 12]
+        chord_tones = [1, 5, 8]
         genome_len = len(individual)
+        notes = [(individual[i], i) for i in range(genome_len) if 1 <= individual[i] <= 12]
 
-        # 1. 预处理：提取有效音符序列（排除休止符0和延音13）
-        # notes 存储格式: (音高, 索引位置)
-        notes = [(individual[i], i)
-                 for i in range(genome_len) if 1 <= individual[i] <= 12]
+        if len(notes) < 8: return 1
 
-        if len(notes) < 8:
-            return 1  # 音符太少，视为无效旋律
-
-        # --- 维度 1: 节奏约束 (Rhythm Constraint / f7) ---
-        # 实验要求：最短音符为八分音符。即偶数位置不能出现新音符改变（除非是延音或休止）
+        # 1. 节奏约束
         rhythm_penalty = 0
         for i in range(0, genome_len, 2):
-            # 如果在一个八分音符的时值内(两个0.25单位)，第二个单位变成了另一个不同的音符
-            if individual[i+1] != 13 and individual[i+1] != individual[i] and individual[i+1] != 0:
+            if i+1 < genome_len and individual[i+1] != 13 and individual[i+1] != individual[i] and individual[i+1] != 0:
                 rhythm_penalty += 15
         score -= rhythm_penalty
 
-        # --- 维度 2: 强拍和弦音 (Chord Note Compatibility / f1) ---
-        # 强拍位置：0, 4, 8, 12... (每个四分音符的开始)
+        # 2. 强拍和弦音
         strong_beat_reward = 0
         for pos in range(0, genome_len, 4):
             note = individual[pos]
-            if note in chord_tones:
-                strong_beat_reward += 10  # 强拍落在和弦音上加分
-            elif note in major_scale:
-                strong_beat_reward += 5  # 强拍落在音阶内加分
+            if note in chord_tones: strong_beat_reward += 10
+            elif note in major_scale: strong_beat_reward += 5
         score += strong_beat_reward
 
-        # --- 维度 3: 起止音约束 (Beginning/Ending / f4, f5) ---
-        # 首音奖励
-        if notes[0][0] in chord_tones:
-            score += 15
-        # 末音奖励：强烈建议回到主音1
-        if notes[-1][0] == 1:
-            score += 30
-        elif notes[-1][0] in chord_tones:
-            score += 15
+        # 3. 起止音
+        if notes[0][0] in chord_tones: score += 15
+        if notes[-1][0] == 1: score += 30
+        elif notes[-1][0] in chord_tones: score += 15
 
-        # --- 维度 4: 音程跳跃与平滑度 (Intervals & Relationship / f2, f6) ---
+        # 4. 音程与方向
         interval_score = 0
         direction_changes = 0
-        prev_direction = 0  # 1 为上行，-1 为下行
-
+        prev_direction = 0
         for i in range(len(notes) - 1):
-            pitch1, pos1 = notes[i]
-            pitch2, pos2 = notes[i+1]
+            pitch1, _ = notes[i]
+            pitch2, _ = notes[i+1]
             diff = abs(pitch2 - pitch1)
-
-            # 论文建议：级进(1-2度)和小跳(3-4度)最悦耳
-            if diff == 0:
-                interval_score += 2   # 适当重复
-            elif 1 <= diff <= 2:
-                interval_score += 8   # 级进（高分奖励）
-            elif 3 <= diff <= 4:
-                interval_score += 5   # 小跳
-            elif diff > 7:
-                interval_score -= 20  # 大于五度的跳进严厉惩罚
-
-            # 维度 5: 方向性控制 (Direction / f3)
-            current_direction = 1 if pitch2 > pitch1 else -1 if pitch2 < pitch1 else 0
-            if current_direction != 0 and prev_direction != 0 and current_direction != prev_direction:
+            if diff == 0: interval_score += 2
+            elif 1 <= diff <= 2: interval_score += 8
+            elif 3 <= diff <= 4: interval_score += 5
+            elif diff > 7: interval_score -= 20
+            
+            curr_dir = 1 if pitch2 > pitch1 else -1 if pitch2 < pitch1 else 0
+            if curr_dir != 0 and prev_direction != 0 and curr_dir != prev_direction:
                 direction_changes += 1
-            prev_direction = current_direction
+            prev_direction = curr_dir
 
-        # 惩罚过于频繁的方向改变（锯齿状旋律）
-        if direction_changes > len(notes) / 3:
-            interval_score -= 15
-
+        if direction_changes > len(notes) / 3: interval_score -= 15
         score += interval_score
 
-        # --- 维度 6: 丰富度/多样性 (Variety - 针对你之前全1的问题) ---
+        # 5. 丰富度
         unique_notes = len(set([n[0] for n in notes]))
-        if unique_notes < 3:
-            score -= 50  # 音符太单一（如全是1）大幅扣分
-        else:
-            score += unique_notes * 5  # 鼓励使用更多不同的音符
+        if unique_notes < 3: score -= 50
+        else: score += unique_notes * 5
 
         return max(score, 1)
+
+    # ✨ 新增：AI 评分函数
+    def _calculate_ai_score(self, individual):
+        """调用神经网络模型进行评分"""
+        # 注意：这里我们随机给一个Key，或者你可以让GA也进化Key
+        # 为了简单，我们暂时假设都是 'C' 调，或者随机选一个
+        # 因为模型主要看的是相对音高关系，Key的影响主要是辅助
+        key = random.choice(self.possible_keys)
+        
+        try:
+            # 模型输出通常在 0-100 之间 (取决于你的训练标签)
+            score = self.ai_evaluator.get_fitness(individual, key)
+            return score
+        except Exception as e:
+            # 如果出错，返回保底分
+            print(f"AI Eval Error: {e}")
+            return 0
+
+    # 🔧 修改：主适应度函数，根据模式调度
+    def calculate_fitness(self, individual):
+        if self.fitness_mode == 'rule':
+            return self._calculate_rule_score(individual)
+            
+        elif self.fitness_mode == 'ai':
+            return self._calculate_ai_score(individual)
+            
+        elif self.fitness_mode == 'hybrid':
+            rule_score = self._calculate_rule_score(individual)
+            ai_score = self._calculate_ai_score(individual)
+            
+            # === 混合策略 ===
+            # 规则分通常在 0-200 左右，AI分取决于你的 dataset_xxx.csv 里的 final_score 范围
+            # 假设 CSV 里 final_score 也是 0-100
+            # 我们可以给 AI 分数更高的权重，因为它是“审美”，规则是“底线”
+            
+            # 如果规则分太低（<0），直接毙掉，不看AI分
+            if rule_score <= 10: 
+                return 1
+            
+            # 加权求和: 40% 规则 + 60% AI
+            # 可以根据实际效果调整这个系数
+            final_score = (rule_score * 0.4) + (ai_score * 0.6)
+            return max(final_score, 1)
+            
+        return 0
 
     # --- 遗传操作 (Genetic Operators) ---
 
@@ -315,3 +350,73 @@ ga = MelodyGA(files, seed=2024)
 results = ga.evolve(generations=150)
 
 save_results_to_csv(results, ga, "generated_music.csv")
+
+
+if __name__ == "__main__":
+    # 1. 定义命令行参数解析器
+    parser = argparse.ArgumentParser(description="Melody Generation with Genetic Algorithm & AI")
+    
+    # 参数: 进化代数
+    parser.add_argument('--gens', type=int, default=100, help='Number of generations (default: 100)')
+    
+    # 参数: 种群大小
+    parser.add_argument('--pop_size', type=int, default=100, help='Population size (default: 100)')
+    
+    # 参数: 适应度模式 (关键参数!)
+    parser.add_argument('--mode', type=str, default='hybrid', 
+                        choices=['rule', 'ai', 'hybrid'],
+                        help="Fitness mode: 'rule' (Music Theory), 'ai' (Neural Net), or 'hybrid' (Both)")
+    
+    # 参数: 选择哪个 AI 模型 (关键参数!)
+    parser.add_argument('--model', type=str, default='combined',
+                        choices=['classical', 'acg', 'pop', 'combined'],
+                        help="Which AI model to use for evaluation")
+    
+    # 参数: 输出文件名
+    parser.add_argument('--output', type=str, default='generated_music.csv',
+                        help="Output CSV filename")
+    
+    # 参数: 随机种子
+    parser.add_argument('--seed', type=int, default=None,
+                        help="Random seed for reproducibility")
+
+    args = parser.parse_args()
+
+    # 2. 打印当前配置，方便确认
+    print("\n" + "="*40)
+    print(f"🎵 Melody Generator Configuration")
+    print(f"{'='*40}")
+    print(f"  - Generations:  {args.gens}")
+    print(f"  - Pop Size:     {args.pop_size}")
+    print(f"  - Fitness Mode: {args.mode.upper()}")
+    if args.mode in ['ai', 'hybrid']:
+        print(f"  - AI Model:     {args.model.upper()}")
+    else:
+        print(f"  - AI Model:     Disabled (Rule Only)")
+    print(f"  - Output File:  {args.output}")
+    print(f"  - Seed:         {args.seed if args.seed else 'Random'}")
+    print("="*40 + "\n")
+
+    # 3. 初始化遗传算法
+    files = ['dataset_acg_ost.csv', 'dataset_classical_instrumental.csv', 'dataset_pop_contemporary.csv']
+    
+    try:
+        ga = MelodyGA(
+            csv_files=files, 
+            pop_size=args.pop_size, 
+            seed=args.seed,
+            fitness_mode=args.mode,    # 传入命令行参数
+            ai_model_type=args.model   # 传入命令行参数
+        )
+        
+        # 4. 开始进化
+        results = ga.evolve(generations=args.gens)
+
+        # 5. 保存结果
+        save_results_to_csv(results, ga, args.output)
+        
+    except Exception as e:
+        print(f"\n❌ 程序运行出错: {e}")
+        # 如果是没找到模型文件，给个提示
+        if "No such file" in str(e) or "not found" in str(e):
+            print("提示: 请先运行 'python train.py' 训练模型，或检查 checkpoints 文件夹。")
