@@ -57,7 +57,7 @@ MelodyGenome
 
 **dataset_acg_ost.csv**, **dataset_classical_instrumental.csv**, **dataset_pop_contemporary.csv**: 算法使用的数据库;
 
-**output_midi**: 生成的音频文件文件夹，内含多个**gen_XX.mid**音频文件;
+**output_midi**: 生成的音频文件文件夹，内含多个 **gen_XX.mid** 音频文件;
 
 **checkpoints**: 训练的模型文件夹，内含一次训练中四个模型的最佳参数.
 
