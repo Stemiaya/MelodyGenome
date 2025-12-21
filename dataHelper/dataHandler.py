@@ -25,8 +25,6 @@ def filter_csv(input_file, output_file):
     df['melody_vector'] = df['melody_vector'].apply(ast.literal_eval)
 
     # 3. 定义过滤逻辑：
-    # 我们要“保留”那些“没有连续16个0”的行
-    # 所以使用 not 逻辑
     mask = df['melody_vector'].apply(
         lambda v: not has_consecutive_zeros(v, 16))
 
@@ -42,4 +40,4 @@ def filter_csv(input_file, output_file):
 
 
 # 使用示例
-filter_csv('dataset_pop_contemporary.csv', 'pop.csv')
+filter_csv('./data/dataset_pop_contemporary.csv', './data/pop.csv')

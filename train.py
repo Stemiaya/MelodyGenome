@@ -8,7 +8,7 @@ import argparse
 import random
 import numpy as np
 
-from dataset import MusicDataset
+from dataHelper.dataPreprocess import MusicDataset
 from fitnessModel import ClassicalResNet, ACGAttentionNet, PopTransformer, CombinedHybridNet
 
 # === 配置区域 ===
@@ -22,10 +22,10 @@ SEED = 42          # 固定随机种子
 
 # 定义文件路径映射
 DATA_FILES = {
-    'classical': 'dataset_classical_instrumental.csv',
-    'acg': 'dataset_acg_ost.csv',
-    'pop': 'dataset_pop_contemporary.csv',
-    'all': 'dataset_total.csv'
+    'classical': './data/dataset_classical_instrumental.csv',
+    'acg': './data/dataset_acg_ost.csv',
+    'pop': './data/dataset_pop_contemporary.csv',
+    'all': './data/dataset_total.csv'
 }
 
 if not os.path.exists(SAVE_DIR):

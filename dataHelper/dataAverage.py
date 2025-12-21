@@ -9,7 +9,7 @@ class ScoreEvaluator:
 
     def calculate_rule_score(self, individual):
         """
-        基于你提供的乐理规则评分逻辑
+        基于乐理规则评分逻辑
         individual: 64个整数的列表
         """
         score = 0
@@ -122,13 +122,8 @@ def process_and_analyze(csv_file):
     print(f"最低分 (Min): {min_val}")
     print("="*30)
 
-    # 如果你想把计算出的分数保存回 CSV
-    # df['calculated_fitness'] = calculated_scores
-    # df.to_csv("analyzed_results.csv", index=False)
-
 
 if __name__ == "__main__":
-    # 请确保你的文件名正确
-    data = ["dataset_acg_ost.csv",
-            "dataset_classical_instrumental.csv", "dataset_pop_contemporary.csv", "dataset_total.csv"]
+    data = ["./data/dataset_acg_ost.csv",
+            "./data/dataset_classical_instrumental.csv", "./data/dataset_pop_contemporary.csv", "./data/dataset_total.csv"]
     process_and_analyze(data[3])

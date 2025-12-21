@@ -1,5 +1,5 @@
 import random
-from fitness_evaluator import FitnessEvaluator
+from fitnessEvaluator import FitnessEvaluator
 
 
 def test_model_manually():
@@ -7,7 +7,7 @@ def test_model_manually():
     print("      Music Model Inference Test        ")
     print("========================================")
 
-    # 1. 选择你要测试的模型类型：'classical', 'acg', 'pop', 'combined'
+    # 1. 选择要测试的模型类型：'classical', 'acg', 'pop', 'combined'
     TARGET_MODEL = 'pop'
 
     try:

@@ -21,4 +21,4 @@ def map_distribution(input_file, output_file):
     print("分布映射完成")
 
 
-map_distribution('dataset_total.csv', 'total.csv')
+map_distribution('./data/dataset_total.csv', './data/total.csv')

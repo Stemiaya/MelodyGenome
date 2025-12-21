@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import random
 import ast
-from fitness_evaluator import FitnessEvaluator
+from fitnessEvaluator import FitnessEvaluator
 import argparse
 from seq2midi import vector_to_midi
 
@@ -198,11 +198,6 @@ class MelodyGA:
             ai_score, k = self._calculate_ai_score(individual)
             used_key = k
 
-            # === 混合策略 ===
-            # 规则分通常在 0-200 左右，AI分取决于你的 dataset_xxx.csv 里的 final_score 范围
-            # 假设 CSV 里 final_score 也是 0-100
-            # 我们可以给 AI 分数更高的权重，因为它是“审美”，规则是“底线”
-
             if rule_score <= 10:
                 score = 1
             else:
@@ -370,8 +365,8 @@ def save_results_to_csv(results, ga_instance, output_filename="generated_melodie
     print(f"成功导出 {len(results)} 条旋律至: {output_filename}")
 
 
-files = ['dataset_acg_ost.csv', 'dataset_classical_instrumental.csv',
-         'dataset_pop_contemporary.csv']
+files = ['./data/dataset_acg_ost.csv', './data/dataset_classical_instrumental.csv',
+         './data/dataset_pop_contemporary.csv']
 
 
 if __name__ == "__main__":
@@ -423,8 +418,8 @@ if __name__ == "__main__":
     print("="*40 + "\n")
 
     # 3. 初始化遗传算法
-    files = ['dataset_acg_ost.csv', 'dataset_classical_instrumental.csv',
-             'dataset_pop_contemporary.csv']
+    files = ['./data/dataset_acg_ost.csv', './data/dataset_classical_instrumental.csv',
+             './data/dataset_pop_contemporary.csv']
 
     try:
         ga = MelodyGA(
