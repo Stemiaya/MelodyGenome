@@ -26,8 +26,7 @@ class MelodyValidator:
 
 
 class MelodyGA:
-    def __init__(self, csv_files, pop_size=100, mutation_rate=0.08, transform_rate=0.3,
-                 seed=42, fitness_mode='rule', ai_model_type='combined'):
+    def __init__(self, csv_files, pop_size=100, seed=42, fitness_mode='rule', ai_model_type='combined'):
         """
         fitness_mode: 
             - 'rule': 仅使用硬编码乐理规则 
@@ -36,8 +35,6 @@ class MelodyGA:
         ai_model_type: 'classical', 'acg', 'pop', 'combined'
         """
         self.pop_size = pop_size
-        self.mutation_rate = mutation_rate
-        self.transform_rate = transform_rate
         self.genome_length = 64
         self.seed = seed
         self.pool = self._load_data(csv_files)
@@ -227,8 +224,6 @@ class MelodyGA:
     def mutate(self, individual):
         """常规变异：随机改变某个音符"""
         for i in range(self.genome_length):
-            if random.random() < self.mutation_rate:
-                # 保持节奏结构，只变异音高
                 if 1 <= individual[i] <= 12:
                     individual[i] = random.randint(1, 12)
 
@@ -308,8 +303,7 @@ class MelodyGA:
                 c2 = self.mutate(c2)
 
                 # 音乐变换
-                if random.random() < self.transform_rate:
-                    c1 = self.musical_transform(c1)
+                c1 = self.musical_transform(c1)
 
                 next_generation.extend([c1, c2])
 
