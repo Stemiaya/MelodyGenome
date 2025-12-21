@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Train specific music evaluation models.")
-    parser.add_argument('--target', type=str, default='combined',
+    parser.add_argument('--target', type=str, default='all',
                         choices=['classical', 'acg', 'pop', 'combined', 'all'])
     args = parser.parse_args()
 
