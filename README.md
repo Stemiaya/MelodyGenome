@@ -77,6 +77,8 @@ MelodyGenome
 
 **dataHelper**: 数据处理辅助程序文件夹.
 
+**testData**: 实验数据
+
 ## 使用说明
 - 在该目录下打开终端，输入`python train.py`进行模型训练，训练好的模型会存放在**checkpoints**文件夹中
 - **train.py** 支持输入参数进行特定模型的训练，要进行此操作，只需输入`python train.py --target <type>`:
