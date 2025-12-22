@@ -75,9 +75,9 @@ MelodyGenome
 
 **checkpoints**: 训练的模型文件夹，内含一次训练中四个模型的最佳参数;
 
-**dataHelper**: 数据处理辅助程序文件夹.
+**dataHelper**: 数据处理辅助程序文件夹;
 
-**testData**: 实验数据
+**testData**: 实验数据文件夹.
 
 ## 使用说明
 - 在该目录下打开终端，输入`python train.py`进行模型训练，训练好的模型会存放在**checkpoints**文件夹中
